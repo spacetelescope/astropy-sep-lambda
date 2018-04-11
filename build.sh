@@ -16,13 +16,25 @@ yum install -y \
 
 do_pip () {
     pip install --upgrade pip wheel
-    test -f /outputs/requirements.txt && pip install --use-wheel -r /outputs/requirements.txt
     pip install --use-wheel --no-binary numpy numpy
     pip install --use-wheel --no-binary scipy scipy
     pip install --use-wheel sklearn
+    test -f /outputs/requirements.txt && pip install --use-wheel -r /outputs/requirements.txt
 }
 
 strip_virtualenv () {
+    # Clean up python files
+    find $VIRTUAL_ENV -name "*.py" -type f -delete
+    echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
+
+    # Clean up docs
+    find $VIRTUAL_ENV -name "*.dist-info" -type d -prune -exec rm -rf {} \;
+    echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
+
+    # Clean up tests
+    find $VIRTUAL_ENV -name "tests" -type d -prune -exec rm -rf {} \;
+    echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
+
     echo "venv original size $(du -sh $VIRTUAL_ENV | cut -f1)"
     find $VIRTUAL_ENV/lib64/python2.7/site-packages/ -name "*.so" | xargs strip
     echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
