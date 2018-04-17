@@ -16,30 +16,35 @@ yum install -y \
 
 do_pip () {
     pip install --upgrade pip wheel
-    pip install --use-wheel --no-binary numpy numpy
-    pip install --use-wheel --no-binary scipy scipy
-    pip install --use-wheel sklearn
-    test -f /outputs/requirements.txt && pip install --use-wheel -r /outputs/requirements.txt
+    pip install --no-binary numpy numpy
+    pip install --no-binary scipy scipy
+    pip install sklearn
+    test -f /outputs/requirements.txt && pip install -r /outputs/requirements.txt
 }
 
 strip_virtualenv () {
-    # Clean up python files
-    find $VIRTUAL_ENV -name "*.py" -type f -delete
-    echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
+    # TODO: Fix this step. It currently breaks some of the packages
+    # # Clean up python files
+    # find $VIRTUAL_ENV -name "*.py" -type f -delete
+    # echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
 
     # Clean up docs
     find $VIRTUAL_ENV -name "*.dist-info" -type d -prune -exec rm -rf {} \;
     echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
 
+    # TODO: Fix this step. It currently breaks some of the packages
     # Clean up tests
-    find $VIRTUAL_ENV -name "tests" -type d -prune -exec rm -rf {} \;
-    echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
+    # find $VIRTUAL_ENV -name "tests" -type d -prune -exec rm -rf {} \;
+    # echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
 
     echo "venv original size $(du -sh $VIRTUAL_ENV | cut -f1)"
     find $VIRTUAL_ENV/lib64/python2.7/site-packages/ -name "*.so" | xargs strip
     echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
 
-    pushd $VIRTUAL_ENV/lib/python2.7/site-packages/ && zip -r -9 -q /tmp/partial-venv.zip * ; popd
+    cp /outputs/process.py $VIRTUAL_ENV
+
+    pushd $VIRTUAL_ENV && zip -r -9 -q /tmp/process.zip process.py ; popd
+    pushd $VIRTUAL_ENV/lib/python2.7/site-packages/ && zip -r -9 --out /tmp/partial-venv.zip -q /tmp/process.zip * ; popd
     pushd $VIRTUAL_ENV/lib64/python2.7/site-packages/ && zip -r -9 --out /outputs/venv.zip -q /tmp/partial-venv.zip * ; popd
     echo "site-packages compressed size $(du -sh /outputs/venv.zip | cut -f1)"
 
@@ -67,5 +72,6 @@ main () {
     shared_libs
 
     strip_virtualenv
+
 }
 main
