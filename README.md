@@ -20,7 +20,7 @@ dependencies, to use them add your handler file to the zip, and add the `lib` di
 
 This repository also contains a file called `process.py` which imports these packages and carries out a simple task with astropy
 
-```
+```python
 import os
 import subprocess
 import uuid
