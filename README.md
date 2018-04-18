@@ -1,8 +1,8 @@
 # astropy-build-lambda
 
-### Build the astropy, photutils, skimage, numpy, scipy, scikit-learn packages and strip them down to run in Lambda
+> Build the astropy, photutils, skimage, numpy, scipy, scikit-learn packages and strip them down to run in Lambda
 
-This repo contains a `build.sh` script that's intended to be run in an Amazon Linux docker container, and build astropy, photutils, skimage, numpy, scipy, and scikitlearn for use in AWS Lambda. For more info about how the script works, and how to use it, see my [blog post on deploying sklearn to Lambda](https://serverlesscode.com/post/scikitlearn-with-amazon-linux-container/).
+This repo contains a `build.sh` script that's intended to be run in an Amazon Linux docker container, and build astropy, photutils, skimage, numpy, scipy, and scikitlearn for use in AWS Lambda. For more info about how the script works, and how to use it, see the blob post by `ryansb` [on deploying sklearn to Lambda](https://serverlesscode.com/post/scikitlearn-with-amazon-linux-container/).
 
 This repository is a fork of the excellent work by `ryanb` in https://github.com/ryansb/sklearn-build-lambda .
 
