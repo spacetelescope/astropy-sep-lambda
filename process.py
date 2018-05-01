@@ -4,12 +4,12 @@ import uuid
 
 libdir = os.path.join(os.getcwd(), 'lib')
 
-FITS_LOCATION = "https://s3.amazonaws.com/dsmo-lambda-functions/data/icwb1i010_drz.fits"
-
 import warnings
 from astropy.utils.data import CacheMissingWarning
 warnings.simplefilter('ignore', CacheMissingWarning)
 
+# should be installed by default?
+import boto3
 import glob
 import numpy as np
 import httplib as httplib
@@ -159,7 +159,8 @@ def match_lists(xy1, xy2, tolerance=20.):
 
     return idx1, idx2, outliers, model
 
-def align_drizzled_image(drz_file = '', NITER=5, clip=20, log=True, outlier_threshold=5):
+def align_drizzled_image(event, NITER=5, clip=20, log=True, outlier_threshold=5):
+    drz_file = event['fits_location']
 
     drz_im = fits.open(drz_file)
     sh = drz_im[1].data.shape
@@ -211,11 +212,6 @@ def align_drizzled_image(drz_file = '', NITER=5, clip=20, log=True, outlier_thre
 
         shift = tf.translation
         NGOOD = (~outliers).sum()
-        #print('drz_file ITER ngood shift1 shift2 rot scale')
-        #print('{0} ({1:d}) {2:d}: {3:6.2f} {4:6.2f} {5:7.3f} {6:7.3f}'.format(root,iter,NGOOD,
-        #                                       shift[0], shift[1],
-        #                                       tf.rotation/np.pi*180,
-        #                                       1./tf.scale))
 
         out_shift += tf.translation
         out_rot -= tf.rotation
@@ -233,13 +229,23 @@ def align_drizzled_image(drz_file = '', NITER=5, clip=20, log=True, outlier_thre
     fp.write('{0} {1:13.4f} {2:13.4f} {3:13.4f} {4:13.5f} {5:13.3f} {6:4d}\n'.format(root, shift[0], shift[1], out_rot/np.pi*180, out_scale, rms, NGOOD))
     fp.close()
 
+    # Write out to S3
+
+    s3 = boto3.resource('s3')
+    s3.meta.client.upload_file('{0}_wcs.log'.format(root), event['s3_output_bucket'], '{0}/{1}_wcs.log'.format(root, root))
+
     orig_hdul = fits.HDUList()
     hdu = drz_wcs.to_fits()[0]
     orig_hdul.append(hdu)
     orig_hdul.writeto('{0}_wcs.fits'.format(root), overwrite=True)
 
+    s3.meta.client.upload_file('{0}_wcs.fits'.format(root), event['s3_output_bucket'], '{0}/{1}_wcs.fits'.format(root, root))
+
+
 def handler(event, context):
-    align_drizzled_image(FITS_LOCATION)
+    print event['s3_output_bucket']
+    print event['fits_location']
+    align_drizzled_image(event)
 
 if __name__ == "__main__":
     handler('', '')
