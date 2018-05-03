@@ -85,7 +85,8 @@ def get_panstarrs_catalog(ra=0., dec=0., radius=3):
     lines = [bytes(columns+'\n')]
     lines.extend(query.readlines()[2:])
 
-    csv_file = 'tmp.csv'
+    # Only /tmp is writable with Lambda (up to 512MB data)
+    csv_file = '/tmp/tmp.csv'
     fp = open(csv_file,'wb')
     fp.writelines(lines)
     fp.close()
@@ -224,7 +225,7 @@ def align_drizzled_image(event, NITER=5, clip=20, log=True, outlier_threshold=5)
 
     root = drz_file.split('/')[-1].split('_')[0]
 
-    fp = open('{0}_wcs.log'.format(root), 'w')
+    fp = open('/tmp/{0}_wcs.log'.format(root), 'w')
     fp.write('# root xshift yshift rot scale rms N\n')
     fp.write('{0} {1:13.4f} {2:13.4f} {3:13.4f} {4:13.5f} {5:13.3f} {6:4d}\n'.format(root, shift[0], shift[1], out_rot/np.pi*180, out_scale, rms, NGOOD))
     fp.close()
@@ -232,14 +233,14 @@ def align_drizzled_image(event, NITER=5, clip=20, log=True, outlier_threshold=5)
     # Write out to S3
 
     s3 = boto3.resource('s3')
-    s3.meta.client.upload_file('{0}_wcs.log'.format(root), event['s3_output_bucket'], '{0}/{1}_wcs.log'.format(root, root))
+    s3.meta.client.upload_file('/tmp/{0}_wcs.log'.format(root), event['s3_output_bucket'], '{0}/{1}_wcs.log'.format(root, root))
 
     orig_hdul = fits.HDUList()
     hdu = drz_wcs.to_fits()[0]
     orig_hdul.append(hdu)
-    orig_hdul.writeto('{0}_wcs.fits'.format(root), overwrite=True)
+    orig_hdul.writeto('/tmp/{0}_wcs.fits'.format(root), overwrite=True)
 
-    s3.meta.client.upload_file('{0}_wcs.fits'.format(root), event['s3_output_bucket'], '{0}/{1}_wcs.fits'.format(root, root))
+    s3.meta.client.upload_file('/tmp/{0}_wcs.fits'.format(root), event['s3_output_bucket'], '{0}/{1}_wcs.fits'.format(root, root))
 
 
 def handler(event, context):
