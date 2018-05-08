@@ -251,7 +251,8 @@ def align_drizzled_image(event, NITER=5, clip=20, log=True, outlier_threshold=5)
 
 def handler(event, context):
     print event['s3_output_bucket']
-    print event['fits_location']
+    print event['fits_s3_key']
+    print event['fits_s3_bucket']
     align_drizzled_image(event)
 
 if __name__ == "__main__":
