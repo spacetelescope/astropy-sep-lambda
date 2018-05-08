@@ -169,7 +169,7 @@ def align_drizzled_image(event, NITER=5, clip=20, log=True, outlier_threshold=5)
     s3 = boto3.resource('s3')
     s3_client = boto3.client('s3')
     bkt = s3.Bucket(drz_file_bucket)
-    bkt.download_file(fits_s3_key, '/tmp/{0}'.format(root), ExtraArgs={"RequestPayer": "requester"})
+    bkt.download_file(drz_file, '/tmp/{0}'.format(root), ExtraArgs={"RequestPayer": "requester"})
 
     drz_im = fits.open('/tmp/{0}'.format(root))
     sh = drz_im[1].data.shape
