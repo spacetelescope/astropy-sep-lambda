@@ -161,9 +161,17 @@ def match_lists(xy1, xy2, tolerance=20.):
     return idx1, idx2, outliers, model
 
 def align_drizzled_image(event, NITER=5, clip=20, log=True, outlier_threshold=5):
-    drz_file = event['fits_location']
+    drz_file = event['fits_s3_key']
+    drz_file_bucket = event['fits_s3_bucket']
 
-    drz_im = fits.open(drz_file)
+    root = drz_file.split('/')[-1].split('_')[0]
+
+    s3 = boto3.resource('s3')
+    s3_client = boto3.client('s3')
+    bkt = s3.Bucket(drz_file_bucket)
+    bkt.download_file(fits_s3_key, '/tmp/{0}'.format(root), ExtraArgs={"RequestPayer": "requester"})
+
+    drz_im = fits.open('/tmp/{0}'.format(root))
     sh = drz_im[1].data.shape
 
     drz_wcs = wcs.WCS(drz_im[1].header, relax=True)
@@ -222,8 +230,6 @@ def align_drizzled_image(event, NITER=5, clip=20, log=True, outlier_threshold=5)
 
     print('shift1 shift2 rot scale rms ngood')
     print(out_shift[0], out_shift[1], out_rot/np.pi*180, out_scale, rms, NGOOD)
-
-    root = drz_file.split('/')[-1].split('_')[0]
 
     fp = open('/tmp/{0}_wcs.log'.format(root), 'w')
     fp.write('# root xshift yshift rot scale rms N\n')
