@@ -16,7 +16,7 @@ $ docker run -v $(pwd):/outputs -it amazonlinux:2017.09 /bin/bash /outputs/build
 That will make a file called `venv.zip` in the local directory that's around 100MB.
 
 Once you run this, you'll have a zipfile containing astropy, photutils, skimage, numpy, scipy, scikit-learn and their
-dependencies. This repository also contains a file called `process.py` which imports these packages and carries out a simple task with astropy. 
+dependencies. This repository also contains a file called `process.py` which imports these packages and ~~carries out a simple task with astropy.~~ some crazy rad stuff with Astropy, Photutils, and Pan-STARRS.
 
 ```python
 import os
