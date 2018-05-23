@@ -25,27 +25,43 @@ import uuid
 
 libdir = os.path.join(os.getcwd(), 'lib')
 
-FITS_LOCATION = "https://hla.stsci.edu/cgi-bin/ecfproxy?file_id=hag_j004524.96+403851.8_j8hpdcaoq_v01.drizzle.fits"
-
 import warnings
 from astropy.utils.data import CacheMissingWarning
 warnings.simplefilter('ignore', CacheMissingWarning)
 
-from astropy.io import fits
+import boto3
+import glob
 import numpy as np
-from photutils import datasets
-from skimage import data
+import httplib as httplib
+from urllib import urlencode
+from urllib import urlopen
 
-def do_science(fits_location):
-    hdul = fits.open(fits_location)
-    print(hdul.info())
+import scipy.ndimage as nd
+from scipy.spatial import cKDTree as KDT
 
-def handler(event, context):
-    do_science(FITS_LOCATION)
+from photutils import detect_threshold, detect_sources
+from photutils import source_properties, properties_table
 
-if __name__ == "__main__":
-    handler('', '')
+import skimage.transform
+from skimage.measure import ransac
 
+from astropy import wcs
+import astropy.io.fits as fits
+import astropy.io.ascii as ascii
+from astropy.table import Table, Column
+from astropy.stats import sigma_clipped_stats, gaussian_fwhm_to_sigma, median_absolute_deviation
+from astropy.convolution import Gaussian2DKernel
+
+def xymatch(x1, y1, x2, y2, tol=None, nnearest=1):
+    """Fast cross-matching of xy coordinates: from https://gist.github.com/eteq/4599814"""
+    x1 = np.array(x1, copy=False)
+    y1 = np.array(y1, copy=False)
+    x2 = np.array(x2, copy=False)
+    y2 = np.array(y2, copy=False)
+    
+ ...
+ ...
+ ...
 ```
 
 ## Extra Packages
