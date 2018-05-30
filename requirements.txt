@@ -1,4 +1,2 @@
 astropy==2.0.5
-photutils==0.4
-requests==2.18.4
-scikit-image==0.13.1
+sep==1.0
