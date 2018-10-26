@@ -80,7 +80,10 @@ Next enter the `venv` directory and try running the command, passing in your `AW
 
 ```
 $ cd venv
-$ docker run --rm -e AWS_ACCESS_KEY_ID='XXXXXX' -e AWS_SECRET_ACCESS_KEY='XXXXXX' -v "$PWD":/var/task lambci/lambda:python2.7 process.handler '{"s3_output_bucket": "dsmo-lambda-test-outputs", "fits_s3_key":"hst/public/icsc/icsca0voq/icsca0voq_drz.fits", "fits_s3_bucket":"stpubdata"}'
+$ docker run --rm -e AWS_ACCESS_KEY_ID='XXXXXX' -e AWS_SECRET_ACCESS_KEY='XXXXXX' \
+-v "$PWD":/var/task lambci/lambda:python2.7 process.handler \
+'{"s3_output_bucket": "dsmo-lambda-test-outputs", \
+"fits_s3_key":"hst/public/icsc/icsca0voq/icsca0voq_drz.fits", "fits_s3_bucket":"stpubdata"}'
 ```
 ## Sizing and Future Work
 
