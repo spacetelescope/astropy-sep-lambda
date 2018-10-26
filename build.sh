@@ -9,15 +9,19 @@ yum install -y \
     gcc \
     gcc-c++ \
     lapack-devel \
-    python27-devel \
-    python27-virtualenv \
     findutils \
-    zip
+    zip \
+    zlib-devel \
+    git \
+    openssl \
+    openssl-devel
 
 do_pip () {
-  pip install --upgrade pip wheel
-  pip install --no-binary numpy numpy
-  pip install --no-binary scipy scipy
+  /root/.pyenv/shims/python3.6 -m venv --copies /sklearn_build
+  source /sklearn_build/bin/activate
+  pip3.6 install --upgrade pip wheel
+  pip3.6 install --no-binary numpy numpy
+  pip3.6 install --no-binary scipy scipy
   test -f /outputs/requirements.txt && pip install -r /outputs/requirements.txt
 }
 
@@ -29,25 +33,25 @@ strip_virtualenv () {
     # TODO: It breaks astropy if you remove its 'tests' folder. Figure out
     # how to gracefully skip this directory (my bash-foo) isn't up to it.
 
-    tar -cvf "$VIRTUAL_ENV/lib64/python2.7/site-packages/astropy.tar" "$VIRTUAL_ENV/lib64/python2.7/site-packages/astropy"
-    rm -rf "$VIRTUAL_ENV/lib64/python2.7/site-packages/astropy"
+    tar -cvf "$VIRTUAL_ENV/lib64/python3.6/site-packages/astropy.tar" "$VIRTUAL_ENV/lib64/python3.6/site-packages/astropy"
+    rm -rf "$VIRTUAL_ENV/lib64/python3.6/site-packages/astropy"
 
     # Clean up tests
     find $VIRTUAL_ENV -name "tests" -type d -prune -exec rm -rf {} \;
     echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
 
-    tar -xvf "$VIRTUAL_ENV/lib64/python2.7/site-packages/astropy.tar"
-    rm -rf "$VIRTUAL_ENV/lib64/python2.7/site-packages/astropy.tar"
+    tar -xvf "$VIRTUAL_ENV/lib64/python3.6/site-packages/astropy.tar"
+    rm -rf "$VIRTUAL_ENV/lib64/python3.6/site-packages/astropy.tar"
 
     echo "venv original size $(du -sh $VIRTUAL_ENV | cut -f1)"
-    find $VIRTUAL_ENV/lib64/python2.7/site-packages/ -name "*.so" | xargs strip
+    find $VIRTUAL_ENV/lib64/python3.6/site-packages/ -name "*.so" | xargs strip
     echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
 
     cp /outputs/process.py $VIRTUAL_ENV
 
     pushd $VIRTUAL_ENV && zip -r -9 -q /tmp/process.zip process.py ; popd
-    pushd $VIRTUAL_ENV/lib/python2.7/site-packages/ && zip -r -9 --out /tmp/partial-venv.zip -q /tmp/process.zip * ; popd
-    pushd $VIRTUAL_ENV/lib64/python2.7/site-packages/ && zip -r -9 --out /outputs/venv.zip -q /tmp/partial-venv.zip * ; popd
+    pushd $VIRTUAL_ENV/lib/python3.6/site-packages/ && zip -r -9 --out /tmp/partial-venv.zip -q /tmp/process.zip * ; popd
+    pushd $VIRTUAL_ENV/lib64/python3.6/site-packages/ && zip -r -9 --out /outputs/venv.zip -q /tmp/partial-venv.zip * ; popd
     echo "site-packages compressed size $(du -sh /outputs/venv.zip | cut -f1)"
 
     pushd $VIRTUAL_ENV && zip -r -q /outputs/full-venv.zip * ; popd
@@ -55,19 +59,24 @@ strip_virtualenv () {
 }
 
 shared_libs () {
-    libdir="$VIRTUAL_ENV/lib64/python2.7/site-packages/lib/"
-    mkdir -p $VIRTUAL_ENV/lib64/python2.7/site-packages/lib || true
+    libdir="$VIRTUAL_ENV/lib64/python3.6/site-packages/lib/"
+    mkdir -p $VIRTUAL_ENV/lib64/python3.6/site-packages/lib || true
     cp /usr/lib64/atlas/* $libdir
     cp /usr/lib64/libquadmath.so.0 $libdir
     cp /usr/lib64/libgfortran.so.3 $libdir
 }
 
+install_36 () {
+    git clone https://github.com/pyenv/pyenv.git ~/.pyenv
+    ~/.pyenv/bin/pyenv install 3.6.2
+    ~/.pyenv/bin/pyenv global 3.6.2
+    /root/.pyenv/shims/python3.6 --version
+    /root/.pyenv/shims/pip3.6 --version
+}
+
+
 main () {
-    /usr/bin/virtualenv \
-        --python /usr/bin/python /sklearn_build \
-        --always-copy \
-        --no-site-packages
-    source /sklearn_build/bin/activate
+    install_36
 
     do_pip
 
