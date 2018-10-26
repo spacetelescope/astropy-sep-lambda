@@ -1,36 +1,17 @@
-import os
-import subprocess
-import uuid
+"""
 
-libdir = os.path.join(os.getcwd(), 'lib')
+:Authors: Warren Hack, Mihai Cara
 
-import warnings
-from astropy.utils.data import CacheMissingWarning
-warnings.simplefilter('ignore', CacheMissingWarning)
+:License: :doc:`LICENSE`
 
-import boto3
-import glob
-import numpy as np
-import sep
-import requests
-from lxml import etree
-
-from astropy import wcs
-from astropy import units as u
-import astropy.io.fits as fits
-import astropy.io.ascii as ascii
-from astropy.table import Table, Column
-from astropy.stats import sigma_clipped_stats, gaussian_fwhm_to_sigma, median_absolute_deviation
-
-from stwcs.wcsutil import headerlet
-from stwcs.distortion.utils import output_wcs
-#import updatehdr
-
+"""
 from __future__ import absolute_import, division, print_function
-
 import re
 import math
 import warnings
+
+from astropy.io import fits
+import numpy as np
 
 from astropy import wcs as pywcs
 
@@ -764,74 +745,3 @@ def remove_distortion_keywords(hdr):
                 del hdr[k[0]]
             except KeyError:
                 pass
-
-def apply_shifts(event):
-
-    flt_file = event['fits_s3_key']
-    flt_file_bucket = event['fits_s3_bucket']
-    root = flt_file.split('/')[-1].split('_')[0]
-
-    s3 = boto3.resource('s3')
-    s3_client = boto3.client('s3')
-    bkt = s3.Bucket(flt_file_bucket)
-    bkt.download_file(flt_file, '/tmp/{0}'.format(root), ExtraArgs={"RequestPayer": "requester"})
-
-    im = fits.open('/tmp/{0}'.format(root))
-    refframe = im[0].header['refframe'].strip()
-    
-    if refframe == 'ICRS':
-        refframe = 'GSC2-GAIA'
-    if refframe == '':
-        refframe = 'GSC1-GAIA'
-    else:
-        refframe = '{}-GAIA'.format(refframe)
-       
-    # Determine shifts from GSC catalog
-    serviceEndPoint = 'https://gsss.stsci.edu/webservices/GSCconvert/GSCconvert.aspx?TRANSFORM={0}&IPPPSSOOT={1}'.format(refframe, root)
-    headers = {'Content-Type': 'text/xml'}
-    try:
-        refRequest = requests.get(serviceEndPoint,headers=headers)
-    except Exception:
-        return
-    refXMLtree=etree.fromstring(refRequest.content)
-    deltaRA=refXMLtree.findtext('deltaRA')
-    deltaDEC=refXMLtree.findtext('deltaDEC')
-    
-    # Build reference frame
-    im_wcs = wcs.WCS(im[1].header, relax=True, fobj=im)
-    ref_wcs = output_wcs([im_wcs])
-    # convert deltaRA/deltaDEC(deg) to pixels
-    ref_wcs_shift = ouptut_wcs([im_wcs])
-    ref_wcs_shift.wcs.crval += (deltaRA, deltaDEC)
-    ref_pix = (2048, 1024)
-    ref_sky_shift = ref_wcs_shift.all_pix2world(ref_pix[0],ref_pix[1],1)
-    ref_pix_shift = ref_wcs.all_world2pix(ref_sky_shift[0], ref_sky_shift[1],1)
-    delta_x = ref_pix_shift[0] - ref_pix[0]
-    delta_y = ref_pix_shift[1] - ref_pix[1]
-
-    # Update input file with hard-coded shifts
-    wcsName = 'AWSUpdate'
-    hdrName = '{}_AWS_hdrlet'.format(root)
-    author = 'AWS'
-    descrip = 'Test shift done on AWS'
-    nmatch= 0
-    catalog = 'No catalog'
-    updatewcs_with_shift(root, ref_wcs, xsh=delta_x, ysh=delta_y,
-                                    wcsname='AWSUpdate')
-    hdrlet = headerlet.create_headerlet(hduList, hdrname=hdrName, wcsname=wcsName, author=author, descrip=descrip, nmatch=nmatch, catalog=catalog)
-    hdrlet_file = "{}.fits".format(hdrName)
-    hdrlet.to_file(hdrlet_file)
-                  
-    # Write out to S3
-    s3 = boto3.resource('s3')
-    s3.meta.client.upload_file('/tmp/{0}'.format(hdrlet_file), event['s3_output_bucket'], "{0}/{1}".format(root, hdrlet_file))
-    s3.meta.client.upload_file('/tmp/{0}_flt.fits'.format(root), event['s3_output_bucket'], "{0}/{1}_flt.fits".format(root, root))
-    
-def handler(event, context):
-    print event['s3_output_bucket']
-    print event['fits_s3_key']
-    print event['fits_s3_bucket']
-    apply_shifts(event)
-
-if __name__ == "__main__":
-    handler('', '')
