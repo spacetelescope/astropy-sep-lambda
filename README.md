@@ -61,6 +61,27 @@ def detect_with_sep(event, detect_thresh=2., npixels=8, grow_seg=5,
 
 To add extra packages to the build, add them to the `requirements.txt` file alongside the `build.sh` in this repo. All packages listed there will be installed in addition to those already described in [`build.sh`](https://github.com/spacetelescope/astropy-sep-lambda/blob/f3f34a6c1b8e6bd451de5c8ff6dc1f5e5cd193f8/build.sh#L18-L20)
 
+## Testing locally
+
+Testing Lambda locally is a pain, but thanks to the efforts of the Lambci folks in https://github.com/lambci/docker-lambda, we can test a function locally as follows:
+
+First, build the Lambda function locally with the command from above:
+
+```
+$ docker run -v $(pwd):/outputs -it amazonlinux:2017.09 /bin/bash /outputs/build.sh
+```
+
+This should leave you with a `venv.zip` file. Unzip this with:
+
+```
+$ unzip venv.zip -d venv
+```
+Next enter the `venv` directory and try running the command, passing in your `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` as environment variables:
+
+```
+$ cd venv
+$ docker run --rm -e AWS_ACCESS_KEY_ID='XXXXXX' -e AWS_SECRET_ACCESS_KEY='XXXXXX' -v "$PWD":/var/task lambci/lambda:python2.7 process.handler '{"s3_output_bucket": "dsmo-lambda-test-outputs", "fits_s3_key":"hst/public/icsc/icsca0voq/icsca0voq_drz.fits", "fits_s3_bucket":"stpubdata"}'
+```
 ## Sizing and Future Work
 
 In its current form, this set of packages weighs in at 50MB and could probably be reduced further by:
