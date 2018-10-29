@@ -26,8 +26,6 @@ from stwcs.wcsutil import headerlet
 from stwcs.distortion.utils import output_wcs
 #import updatehdr
 
-from __future__ import absolute_import, division, print_function
-
 import re
 import math
 import warnings
@@ -192,6 +190,7 @@ def updatewcs_with_shift(image,reference,wcsname=None, reusename=False,
     else:
         print(logstr)
 
+    print(image)
     # reset header WCS keywords to original (OPUS generated) values
     extlist = get_ext_list(image, extname='SCI')
     if extlist:
@@ -532,8 +531,8 @@ def create_unique_wcsname(fimg, extnum, wcsname):
         index += 1 # for use with new name
         uniqname = "%s_%d"%(wcsname,index)
     return uniqname
-    
-    
+
+
 ##########################################
 #
 #  Functions from drizzlepac.util
@@ -675,7 +674,7 @@ def get_ext_list(img, extname='SCI'):
         hdulist = fits.open(img)
     else:
         hdulist = img # assume it is already a FITS HDUList object
-        
+
     # when extver is None - return the range of all 'image'-like FITS extensions
     if extname is None:
         extn = []
@@ -691,7 +690,7 @@ def get_ext_list(img, extname='SCI'):
         if doRelease:
             img.release()
         return extn
-    
+
     extname = extname.upper()
 
     extver = []
@@ -766,42 +765,48 @@ def remove_distortion_keywords(hdr):
                 pass
 
 def apply_shifts(event):
-
     flt_file = event['fits_s3_key']
     flt_file_bucket = event['fits_s3_bucket']
     root = flt_file.split('/')[-1].split('_')[0]
+    root_file = flt_file.split('/')[-1]
 
     s3 = boto3.resource('s3')
     s3_client = boto3.client('s3')
     bkt = s3.Bucket(flt_file_bucket)
-    bkt.download_file(flt_file, '/tmp/{0}'.format(root), ExtraArgs={"RequestPayer": "requester"})
+    bkt.download_file(flt_file, '/tmp/{0}'.format(root_file), ExtraArgs={"RequestPayer": "requester"})
 
-    im = fits.open('/tmp/{0}'.format(root))
+    im = fits.open('/tmp/{0}'.format(root_file))
     refframe = im[0].header['refframe'].strip()
-    
+
     if refframe == 'ICRS':
         refframe = 'GSC2-GAIA'
     if refframe == '':
         refframe = 'GSC1-GAIA'
-    else:
-        refframe = '{}-GAIA'.format(refframe)
-       
+    # else:
+    #     refframe = '{}-GAIA'.format(refframe)
+
     # Determine shifts from GSC catalog
     serviceEndPoint = 'https://gsss.stsci.edu/webservices/GSCconvert/GSCconvert.aspx?TRANSFORM={0}&IPPPSSOOT={1}'.format(refframe, root)
+
+    print(serviceEndPoint)
     headers = {'Content-Type': 'text/xml'}
     try:
         refRequest = requests.get(serviceEndPoint,headers=headers)
     except Exception:
         return
+    print(refRequest.content)
     refXMLtree=etree.fromstring(refRequest.content)
     deltaRA=refXMLtree.findtext('deltaRA')
     deltaDEC=refXMLtree.findtext('deltaDEC')
-    
+
+    deltaRA=float(deltaRA)
+    deltaDEC=float(deltaDEC)
+
     # Build reference frame
     im_wcs = wcs.WCS(im[1].header, relax=True, fobj=im)
     ref_wcs = output_wcs([im_wcs])
     # convert deltaRA/deltaDEC(deg) to pixels
-    ref_wcs_shift = ouptut_wcs([im_wcs])
+    ref_wcs_shift = output_wcs([im_wcs])
     ref_wcs_shift.wcs.crval += (deltaRA, deltaDEC)
     ref_pix = (2048, 1024)
     ref_sky_shift = ref_wcs_shift.all_pix2world(ref_pix[0],ref_pix[1],1)
@@ -816,21 +821,22 @@ def apply_shifts(event):
     descrip = 'Test shift done on AWS'
     nmatch= 0
     catalog = 'No catalog'
-    updatewcs_with_shift(root, ref_wcs, xsh=delta_x, ysh=delta_y,
-                                    wcsname='AWSUpdate')
+    print('Calling updatewcs_with_shift')
+    print(root)
+    updatewcs_with_shift('/tmp/{0}'.format(root_file), ref_wcs, xsh=delta_x, ysh=delta_y,wcsname='AWSUpdate')
     hdrlet = headerlet.create_headerlet(hduList, hdrname=hdrName, wcsname=wcsName, author=author, descrip=descrip, nmatch=nmatch, catalog=catalog)
     hdrlet_file = "{}.fits".format(hdrName)
     hdrlet.to_file(hdrlet_file)
-                  
+
     # Write out to S3
     s3 = boto3.resource('s3')
     s3.meta.client.upload_file('/tmp/{0}'.format(hdrlet_file), event['s3_output_bucket'], "{0}/{1}".format(root, hdrlet_file))
-    s3.meta.client.upload_file('/tmp/{0}_flt.fits'.format(root), event['s3_output_bucket'], "{0}/{1}_flt.fits".format(root, root))
-    
+    s3.meta.client.upload_file('/tmp/{0}'.format(root_file), event['s3_output_bucket'], "{0}/{1}".format(root, root_file))
+
 def handler(event, context):
-    print event['s3_output_bucket']
-    print event['fits_s3_key']
-    print event['fits_s3_bucket']
+    print(event['s3_output_bucket'])
+    print(event['fits_s3_key'])
+    print(event['fits_s3_bucket'])
     apply_shifts(event)
 
 if __name__ == "__main__":
