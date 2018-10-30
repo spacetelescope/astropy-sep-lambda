@@ -775,7 +775,7 @@ def apply_shifts(event):
     bkt = s3.Bucket(flt_file_bucket)
     bkt.download_file(flt_file, '/tmp/{0}'.format(root_file), ExtraArgs={"RequestPayer": "requester"})
 
-    im = fits.open('/tmp/{0}'.format(root_file))
+    im = fits.open('/tmp/{0}'.format(root_file), mode='update')
     refframe = im[0].header['refframe'].strip()
 
     if refframe == 'ICRS':
@@ -823,10 +823,10 @@ def apply_shifts(event):
     catalog = 'No catalog'
     print('Calling updatewcs_with_shift')
     print(root)
-    updatewcs_with_shift('/tmp/{0}'.format(root_file), ref_wcs, xsh=delta_x, ysh=delta_y,wcsname='AWSUpdate')
-    hdrlet = headerlet.create_headerlet(hduList, hdrname=hdrName, wcsname=wcsName, author=author, descrip=descrip, nmatch=nmatch, catalog=catalog)
+    updatewcs_with_shift(im, ref_wcs, xsh=delta_x, ysh=delta_y,wcsname=wcsName)
+    hdrlet = headerlet.create_headerlet(im, hdrname=hdrName, wcsname=wcsName, author=author, descrip=descrip, nmatch=nmatch, catalog=catalog)
     hdrlet_file = "{}.fits".format(hdrName)
-    hdrlet.to_file(hdrlet_file)
+    hdrlet.tofile(hdrlet_file)
 
     # Write out to S3
     s3 = boto3.resource('s3')
