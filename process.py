@@ -190,7 +190,6 @@ def updatewcs_with_shift(image,reference,wcsname=None, reusename=False,
     else:
         print(logstr)
 
-    print(image)
     # reset header WCS keywords to original (OPUS generated) values
     extlist = get_ext_list(image, extname='SCI')
     if extlist:
@@ -788,13 +787,11 @@ def apply_shifts(event):
     # Determine shifts from GSC catalog
     serviceEndPoint = 'https://gsss.stsci.edu/webservices/GSCconvert/GSCconvert.aspx?TRANSFORM={0}&IPPPSSOOT={1}'.format(refframe, root)
 
-    print(serviceEndPoint)
     headers = {'Content-Type': 'text/xml'}
     try:
         refRequest = requests.get(serviceEndPoint,headers=headers)
     except Exception:
         return
-    print(refRequest.content)
     refXMLtree=etree.fromstring(refRequest.content)
     deltaRA=refXMLtree.findtext('deltaRA')
     deltaDEC=refXMLtree.findtext('deltaDEC')
@@ -821,12 +818,10 @@ def apply_shifts(event):
     descrip = 'Test shift done on AWS'
     nmatch= 0
     catalog = 'No catalog'
-    print('Calling updatewcs_with_shift')
-    print(root)
     updatewcs_with_shift(im, ref_wcs, xsh=delta_x, ysh=delta_y,wcsname=wcsName)
     hdrlet = headerlet.create_headerlet(im, hdrname=hdrName, wcsname=wcsName, author=author, descrip=descrip, nmatch=nmatch, catalog=catalog)
     hdrlet_file = "{}.fits".format(hdrName)
-    hdrlet.tofile(hdrlet_file)
+    hdrlet.tofile('/tmp/{0}'.format(hdrlet_file), clobber=True)
 
     # Write out to S3
     s3 = boto3.resource('s3')
