@@ -133,6 +133,7 @@ def detect_with_sep(event, detect_thresh=2., npixels=8, grow_seg=5,
     
     # Make a plot
     im_data = im[1].data
+    im_shape = im_data.shape
     im_data[np.isnan(im_data)] = 0.0
     
     # Trim the top and bottom 1 percent of pixel values
@@ -151,8 +152,8 @@ def detect_with_sep(event, detect_thresh=2., npixels=8, grow_seg=5,
     f.set_figwidth(12)
     ax.imshow(im_data, cmap="Greys", clim=(0, 255), origin='lower')
     ax.plot(catalog['x'],catalog['y'], 'o',markeredgewidth=1,markeredgecolor='red', markerfacecolor='None')
-    ax.set_xlim([0,1014])
-    ax.set_ylim([0,1014])
+    ax.set_xlim([-0.05*im_shape[1],1.05*im_shape[1]])
+    ax.set_ylim([-0.05*im_shape[0],1.05*im_shape[0]])
     f.savefig('/tmp/{0}.png'.format(root))
 
     # Write the catalog to local disk
