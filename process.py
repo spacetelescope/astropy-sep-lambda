@@ -19,6 +19,9 @@ import astropy.io.fits as fits
 import astropy.io.ascii as ascii
 from astropy.table import Table, Column
 from astropy.stats import sigma_clipped_stats, gaussian_fwhm_to_sigma, median_absolute_deviation
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
 
 GAUSS_3_7x7 = np.array(
 [[ 0.004963,  0.021388,  0.051328,  0.068707,  0.051328,  0.021388,  0.004963],
@@ -127,6 +130,30 @@ def detect_with_sep(event, detect_thresh=2., npixels=8, grow_seg=5,
     catalog['kron_radius'] = kronrad*u.pixel
     catalog['kron_flag'] = krflag
     catalog['kron_flux_flag'] = kron_flux_flag
+    
+    # Make a plot
+    im_data = im[1].data
+    im_data[np.isnan(im_data)] = 0.0
+    
+    # Trim the top and bottom 1 percent of pixel values
+    top = np.percentile(im_data, 99)
+    im_data[im_data > top] = top
+    bottom = np.percentile(im_data, 1)
+    im_data[im_data < bottom] = bottom
+
+    # Scale the data.
+    im_data = im_data - im_data.min()
+    im_data = (im_data / im_data.max()) * 255.
+    im_data = np.uint8(im_data)
+
+    f, (ax) = plt.subplots(1,1, sharex=True)
+    f.set_figheight(12)
+    f.set_figwidth(12)
+    ax.imshow(im_data, cmap="Greys", clim=(0, 255), origin='lower')
+    ax.plot(catalog['x'],catalog['y'], 'o',markeredgewidth=1,markeredgecolor='red', markerfacecolor='None')
+    ax.set_xlim([0,1014])
+    ax.set_ylim([0,1014])
+    f.savefig('/tmp/{0}.png'.format(root))
 
     # Write the catalog to local disk
     catalog.write('/tmp/{0}.catalog.fits'.format(root), format='fits')
@@ -134,6 +161,7 @@ def detect_with_sep(event, detect_thresh=2., npixels=8, grow_seg=5,
     # Write out to S3
     s3 = boto3.resource('s3')
     s3.meta.client.upload_file('/tmp/{0}.catalog.fits'.format(root), event['s3_output_bucket'], '{0}/{1}.catalog.fits'.format(root, root))
+    s3.meta.client.upload_file('/tmp/{0}.png'.format(root), event['s3_output_bucket'], 'PNG/{0}.png'.format(root))
 
 def handler(event, context):
     print event['s3_output_bucket']
