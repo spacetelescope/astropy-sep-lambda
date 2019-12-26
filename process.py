@@ -1,4 +1,3 @@
-import glob
 import logging
 import os
 libdir = os.path.join(os.getcwd(), 'lib')
@@ -8,7 +7,7 @@ import warnings
 from astropy.convolution import kernels
 from astropy.stats import gaussian_sigma_to_fwhm
 import astropy.io.fits as fits
-from astropy.table import Table, Column
+from astropy.table import Table
 from astropy import units as u
 from astropy import wcs
 from astropy.utils.data import CacheMissingWarning
@@ -35,7 +34,7 @@ logging.basicConfig(format='%(levelname)-4s '
                            '[%(module)s.%(funcName)s:%(lineno)d]'
                            ' %(message)s',
                     )
-LOG = logging.getLogger('fits_handler')
+LOG = logging.getLogger('process')
 
 
 def detect_with_sep(
@@ -46,14 +45,17 @@ def detect_with_sep(
         gauss_fwhm=2.,
         gsize=3,
         im_wcs=None,
-        fname=None
 ):
-    """
+    """ Run SExtractor on a FITS file contained in the Lambda event
+
+    This function will generate a catalog and a PNG for the FITS file stored in
+    the Lambda event. The catalog and PNG will be stored in the s3 output
+    bucket specified by the Lambda event.
 
     Parameters
     ----------
     event : dict
-        dict containing the data passed to the lamba function
+        dict containing the data passed to the Lambda function
     detect_thresh: int,
         detection threshold to use for sextractor
     npixels: int,
@@ -62,11 +64,11 @@ def detect_with_sep(
 
     gauss_fwhm: float,
         FWHM of the kernel to use for filtering prior to source finding
+
     gsize: float
 
     im_wcs: astropy.wcs.WCS
         WCS object defining the coordinate system of the observation
-    fname: str
 
 
     Returns
@@ -76,9 +78,7 @@ def detect_with_sep(
 
     drz_file = event['fits_s3_key']
     drz_file_bucket = event['fits_s3_bucket']
-
-    if fname is None:
-        fname = drz_file.split('/')[-1]
+    fname = drz_file.split('/')[-1]
 
     s3 = boto3.resource('s3')
     bkt = s3.Bucket(drz_file_bucket)
