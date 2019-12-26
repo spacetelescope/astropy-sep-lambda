@@ -2,6 +2,7 @@ import glob
 import logging
 import os
 libdir = os.path.join(os.getcwd(), 'lib')
+import shutil
 import warnings
 
 from astropy.convolution import kernels
@@ -18,6 +19,7 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import sep
+
 
 GAUSS_3_7x7 = np.array(
 [[ 0.004963,  0.021388,  0.051328,  0.068707,  0.051328,  0.021388,  0.004963],
@@ -292,14 +294,7 @@ def clean_up(dirname="/tmp"):
     -------
 
     """
-    flist = glob.glob(f"{dirname}/*")
-    for f in flist:
-        try:
-            os.remove(f)
-        except OSError as e:
-            LOG.warning(e)
-        else:
-            LOG.info('removed')
+    shutil.rmtree(dirname, ignore_errors=True)
 
 
 def handler(event, context):
