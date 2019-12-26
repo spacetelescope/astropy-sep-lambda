@@ -87,7 +87,7 @@ Testing Lambda locally is a pain, but thanks to the efforts of the Lambci folks 
 First, build the Lambda function locally with the command from above:
 
 ```
-$ docker run -v $(pwd):/outputs -it amazonlinux:2017.09 /bin/bash /outputs/build.sh
+$ docker run -v $(pwd):/outputs -it amazonlinux:2018.03 /bin/bash /outputs/build.sh
 ```
 
 This should leave you with a `venv.zip` file. Unzip this with:
