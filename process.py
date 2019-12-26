@@ -153,7 +153,7 @@ def detect_with_sep(
         'filter_type': 'conv',
         'minarea': npixels,
         'deblend_nthresh': 32,
-        'deblend_contrast': 0.005,
+        'deblend_cont': 0.005,
         'clean': True,
         'clean_param': 1,
         'segmentation_map': False
