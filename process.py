@@ -149,7 +149,7 @@ def detect_with_sep(
     inputs = {
         'err': err,
         'mask': mask,
-        'filter_kernel': gaussian_kernel.data,
+        'filter_kernel': gaussian_kernel.array,
         'filter_type': 'conv',
         'minarea': npixels,
         'deblend_nthresh': 32,

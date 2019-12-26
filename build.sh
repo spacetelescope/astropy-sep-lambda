@@ -63,8 +63,8 @@ shared_libs () {
 }
 
 main () {
-    /usr/bin/virtualenv \
-        --python /usr/bin/python /sklearn_build \
+    /usr/bin/virtualenv-3.6 \
+        --python /usr/bin/python36 /sklearn_build \
         --always-copy \
         --no-site-packages
     source /sklearn_build/bin/activate

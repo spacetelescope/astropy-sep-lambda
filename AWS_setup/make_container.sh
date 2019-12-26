@@ -4,4 +4,4 @@
 docker pull amazonlinux:2018.03
 
 # Build the container
-docker run -v $(pwd):/outputs -it amazonlinux:2018.03 /bin/bash /outputs/py3build.sh
+docker run -v $(pwd):/outputs -it amazonlinux:2018.03 /bin/bash /outputs/build.sh
