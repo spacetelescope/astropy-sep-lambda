@@ -40,7 +40,7 @@ strip_virtualenv () {
     rm -rf "$VIRTUAL_ENV/lib64/python3.6/site-packages/astropy.tar"
 
     echo "venv original size $(du -sh $VIRTUAL_ENV | cut -f1)"
-    find $VIRTUAL_ENV/lib64/python2.7/site-packages/ -name "*.so" | xargs strip
+    find $VIRTUAL_ENV/lib64/python3.6/site-packages/ -name "*.so" | xargs strip
     echo "venv stripped size $(du -sh $VIRTUAL_ENV | cut -f1)"
 
     cp /outputs/process.py $VIRTUAL_ENV
