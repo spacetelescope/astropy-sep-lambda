@@ -270,9 +270,9 @@ def detect_with_sep(
         f"{basename}/{basename}.catalog.fits"
     )
     s3.meta.client.upload_file(
-        f"/tmp/{fname}.png",
+        f"/tmp/{basename}.png",
         event['s3_output_bucket'],
-        f"PNG/{fname}.png"
+        f"PNG/{basename}.png"
     )
 
 def clean_up(dirname="/tmp"):
