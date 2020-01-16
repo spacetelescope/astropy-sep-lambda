@@ -294,8 +294,10 @@ def clean_up(dirname="/tmp"):
     -------
 
     """
-    shutil.rmtree(dirname, ignore_errors=True)
-
+    try:
+        shutil.rmtree(dirname, ignore_errors=True)
+    except FileNotFoundError as e:
+        LOG.warning(e)
 
 def handler(event, context):
     LOG.info(event['s3_output_bucket'])
